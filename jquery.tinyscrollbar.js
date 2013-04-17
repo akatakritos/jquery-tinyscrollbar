@@ -10,6 +10,7 @@
  * @version 1.81
  * @author Maarten Baijs
  *
+ * Updated 2013-04-17, Matt Burke <burkemd.1@gmail.com>
  */
 ;( function( $ ) 
 {
@@ -24,6 +25,7 @@
             ,   size         : 'auto' // set the size of the scrollbar to auto or a fixed number.
             ,   sizethumb    : 'auto' // set the size of the thumb to auto or a fixed number.
             ,   invertscroll : false  // Enable mobile invert style scrolling
+            ,   onscrollstart : undefined  // Scroll start callback function. For wheeling, will be called once per second
         }
     };
 
@@ -60,6 +62,8 @@
         ,   iPosition   = { start: 0, now: 0 }
         ,   iMouse      = {}
         ,   touchEvents = 'ontouchstart' in document.documentElement
+        ,   wheeling    = false
+        ,   scrollTimeoutHandle      = null
         ;
 
         function initialize()
@@ -158,6 +162,10 @@
                 };
                 document.ontouchend = end;        
             }
+
+            if (typeof options.onscrollstart === "function" ) {
+                options.onscrollstart.call( root );
+            }
         }
 
         function wheel( event )
@@ -174,11 +182,31 @@
                 oThumb.obj.css( sDirection, iScroll / oScrollbar.ratio );
                 oContent.obj.css( sDirection, -iScroll );
 
+                startWheeling();
+
+
                 if( options.lockscroll || ( iScroll !== ( oContent[ options.axis ] - oViewport[ options.axis ] ) && iScroll !== 0 ) )
                 {
                     oEvent = $.event.fix( oEvent );
                     oEvent.preventDefault();
                 }
+            }
+        }
+
+        function startWheeling() {
+
+            if (wheeling === false) {
+                wheeling = true;
+                if (typeof options.onscrollstart === "function" ) {
+                    options.onscrollstart.call( root );
+                }
+            }
+
+            if ( !scrollTimeoutHandle ) {
+                scrollTimeoutHandle = setTimeout(function() {
+                    wheeling = false;
+                    scrollTimeoutHandle = null;
+                }, 1000);
             }
         }
 
